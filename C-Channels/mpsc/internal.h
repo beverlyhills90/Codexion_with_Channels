@@ -3,7 +3,6 @@
 
 # include "cmpsc.h"
 
-
 struct s_sender
 {
 	t_channel	*channel_q;

@@ -1,14 +1,15 @@
 #ifndef CODEXION_H
-#define CODEXION_H
+# define CODEXION_H
+
 # include <pthread.h>
-#include <stdint.h>
+# include <stdint.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
 # include <sys/time.h>
 # include <unistd.h>
 # include "C-Channels/channels.h"
-#include "C-Channels/mpsc/cmpsc.h"
+# include "C-Channels/mpsc/cmpsc.h"
 
 typedef enum e_scheduler
 {
@@ -16,11 +17,21 @@ typedef enum e_scheduler
 	EDF
 }	t_scheduler;
 
-typedef enum e_msgType{
-    MSG_TOOK_DONGLE, MSG_COMPILING, MSG_DEBUGGING,
-    MSG_REFACTORING, MSG_COMPILE_DONE
-} t_msgType;
+typedef enum e_msg_type
+{
+	MSG_TOOK_DONGLE,
+	MSG_COMPILING,
+	MSG_DEBUGGING,
+	MSG_REFACTORING,
+	MSG_COMPILE_DONE
+}	t_msg_type;
 
+typedef enum e_check_status
+{
+	RS_OK,
+	RS_DONE,
+	RS_BURNEDOUT
+}	t_check_status;
 
 typedef enum e_running
 {
@@ -28,10 +39,10 @@ typedef enum e_running
 	STOP
 }	t_running;
 
-typedef struct s_worldData t_worldData;
-typedef struct s_coder t_coder ;
+typedef struct s_world_data	t_world_data;
+typedef struct s_coder		t_coder;
 
-typedef struct s_argumenst
+typedef struct s_arguments
 {
 	size_t		number_of_coders;
 	size_t		time_to_burnout;
@@ -40,14 +51,14 @@ typedef struct s_argumenst
 	size_t		time_to_refactor;
 	size_t		number_of_compiles_required;
 	size_t		dongle_cool_down;
-	t_scheduler scheduler;
-}	t_argumnets;
+	t_scheduler	scheduler;
+}	t_arguments;
 
-
-typedef struct s_request {
-    long long lastComplieTimestomp;
-    t_coder *coder;
-} t_request ;
+typedef struct s_request
+{
+	long long	last_compile_timestamp;
+	t_coder		*coder;
+}	t_request;
 
 typedef struct s_dongle
 {
@@ -60,72 +71,77 @@ typedef struct s_dongle
 	int				queue_size;
 }	t_dongle;
 
-
 typedef struct s_coder
 {
-    t_sender        *log_sender;
-    unsigned int    coder_id;
-    long long       lastComplieTimestomp;
-    t_dongle        *left;
-	t_dongle        *right;
-    pthread_t       thread_id;
-    t_argumnets     *args;
-    t_worldData     *world_data;
-    
-} t_coder;
+	t_sender		*log_sender;
+	unsigned int	coder_id;
+	long long		last_compile_timestamp;
+	t_dongle		*left;
+	t_dongle		*right;
+	pthread_t		thread_id;
+	t_arguments		*args;
+	t_world_data	*world_data;
+}	t_coder;
 
-
-typedef struct s_worldData {
-    t_receiver *log_rcv;
-    t_sender *log_sender_oiginal;
-    pthread_mutex_t	world_mutex;
-    pthread_mutex_t	output_mutex;
-    t_running        is_running;
-    pthread_t       monitor_thread_id;
-    t_coder			*coders;
-    t_dongle        *dongles;
-    long long             *lastComplieTimeArr;
-    unsigned int    *compilationsDone;
-   	t_argumnets		*args;
-    long long		timeOfStart;
-    
-} t_worldData;
-
-typedef struct s_msg 
+typedef struct s_world_data
 {
-    unsigned int coderId;
-    t_msgType type;
-    long long timestomp;
-}t_msg ;
+	t_receiver		*log_rcv;
+	t_sender		*log_sender_original;
+	pthread_mutex_t	world_mutex;
+	t_running		is_running;
+	pthread_t		monitor_thread_id;
+	t_coder			*coders;
+	t_dongle		*dongles;
+	long long		*last_compile_time_arr;
+	unsigned int	*compilations_done;
+	t_arguments		*args;
+	long long		time_of_start;
+}	t_world_data;
 
-int	    parsing_args(char **argv, int argc, t_argumnets **arguments);
-t_dongle	*dongles_init(unsigned long number);
-t_coder	*coders_init(t_argumnets *args, t_dongle *dongles,
-		t_worldData *world_data);
-int	world_data_init(t_worldData **worldData, t_argumnets *args);
+typedef struct s_msg
+{
+	unsigned int	coder_id;
+	t_msg_type		type;
+	long long		timestamp;
+}	t_msg;
 
-int	coders_create(t_coder *coders, size_t num, t_worldData *world_data);
+typedef struct s_check_result
+{
+	t_check_status	status;
+	long long		time;
+	unsigned int	burned_coder_id;
+}	t_check_result;
 
-//coders_and_dongles actions 
-void	take_dongle_wraper(t_coder *coder);
-void	giveup_dongle_wraper(t_coder *coder);
-void *coders_routine(void *args);
+int				parsing_args(char **argv, int argc, t_arguments **arguments);
+t_dongle		*dongles_init(unsigned long number);
+t_coder			*coders_init(t_arguments *args, t_dongle *dongles,
+					t_world_data *world_data);
+int				world_data_init(t_world_data **world_data, t_arguments *args);
+int				mutexes_init(t_world_data **world_data, t_arguments *args);
+int				ch_init(t_world_data **world_data);
+int				coders_create(t_coder *coders, size_t num,
+					t_world_data *world_data);
 
-//schedulers
-void	scheduler_add(t_scheduler scheduler, t_coder *coder, t_dongle *dongle);
-void	fifo_scheduler_add(t_dongle *dongle, t_request request);
-void	edf_scheduler(t_dongle *dongle, t_request request);
-void	scheduler_del(t_dongle *dongle);
+int				take_dongle_wrapper(t_coder *coder);
+void			giveup_dongle_wrapper(t_coder *coder);
+void			*coders_routine(void *args);
 
-//helpers
-long long	get_ms(void);
-void free_dongles(t_dongle *dongles,size_t nb);
-void free_coders(t_coder *coders);
-int	world_data_alocation(t_worldData **worldData, t_argumnets *args);
-t_running	safeWorldStateCheck(t_worldData *worldData);
-void    worldStop(t_worldData *wordData);
+void			scheduler_add(t_scheduler scheduler, t_coder *coder,
+					t_dongle *dongle);
+void			fifo_scheduler_add(t_dongle *dongle, t_request request);
+void			edf_scheduler(t_dongle *dongle, t_request request);
+void			scheduler_del(t_dongle *dongle);
 
-//monitor
-void *monitor(void *arg);
+long long		get_ms(void);
+void			free_dongles(t_dongle **dongles, unsigned int num);
+void			free_coders(t_coder *coders, unsigned int num);
+void			free_all(t_world_data *world_data);
+t_running		safe_world_state_check(t_world_data *world_data);
+void			world_stop(t_world_data *world_data);
+void			*monitor(void *arg);
+void			print_log(t_msg *msg, t_world_data *world_data);
+void			set_compile(t_world_data *world_data, t_msg *msg);
+t_check_result	check_burn_out(t_world_data *world_data,
+					long long time_of_start);
 
 #endif

@@ -3,99 +3,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct s_checkResult {
-    t_checkStatus stauts;
-    long long time;
-    unsigned int burnedCoderId;
-} t_checkResult ;
-
-
-void print_log(t_msg *msg, t_worldData *worldData)
+static int	handle_check(t_world_data *world_data, t_check_result check_res)
 {
-    long long logTime;
-    char *logs[4];
-
-    logs[0] = " has taken a dongle";
-    logs[1] = " is compiling";
-    logs[2] = " is debugging";
-    logs[3] = " is refactoring";
-    if(safeWorldStateCheck(worldData) == STOP)
-        return;
-    logTime = msg->timestomp - worldData->timeOfStart;
-    printf("%llu %i%s\n",logTime, msg->coderId, logs[msg->type]);
+	if (check_res.status == RS_BURNEDOUT)
+	{
+		printf("%llu %u burned out\n", check_res.time,
+			check_res.burned_coder_id);
+		return (1);
+	}
+	if (check_res.status == RS_DONE)
+		return (world_stop(world_data), 1);
+	return (0);
 }
 
-void set_complie(t_worldData *wordData, t_msg *msg)
+static void	handle_msg(t_world_data *world_data, t_msg *msg)
 {
-    wordData->lastComplieTimeArr[msg->coderId-1] = msg->timestomp - wordData->timeOfStart;
-    wordData->compilationsDone[msg->coderId-1]++;
+	if (msg->type != MSG_COMPILE_DONE)
+		print_log(msg, world_data);
+	if (msg->type == MSG_COMPILING || msg->type == MSG_COMPILE_DONE)
+		set_compile(world_data, msg);
+	free(msg);
 }
 
-t_checkResult checkBurnOut(t_worldData *worldData,long long timeOfStart)
+void	*monitor(void *arg)
 {
-    unsigned long long min_time;
-    size_t i;
-    size_t done;
-    t_checkResult result;
+	t_world_data	*world_data;
+	t_chan_result	res;
+	t_msg			*msg;
+	t_check_result	check_res;
 
-    i = 0;
-    done = 0;
-    result.stauts = RS_BURNEDOUT;
-    min_time = worldData->lastComplieTimeArr[0];
-    while (i < worldData->args->number_of_coders)
-    {
-        if (worldData->lastComplieTimeArr[i] < min_time)
-            min_time = worldData->lastComplieTimeArr[i];
-        if (worldData->lastComplieTimeArr[i] + worldData->args->time_to_burnout <= get_ms() - timeOfStart)
-        {
-            worldStop(worldData);
-            result.time = worldData->lastComplieTimeArr[i] + worldData->args->time_to_burnout;
-            result.burnedCoderId = i + 1;
-            return result;
-        }
-        if (worldData->args->number_of_compiles_required == worldData->compilationsDone[i])
-            done++;
-        i++;
-    }
-    if (done == i)
-        result.stauts = RS_DONE;
-    else
-        result.stauts = RS_OK;
-    result.time = min_time + worldData->args->time_to_burnout;
-    return result;
-}
-
-void *monitor(void *arg)
-{
-    t_worldData *worldData;
-    t_chan_result res;
-    t_msg *msg;
-    unsigned int burnOutId;
-    long long timeOfBurnOut;
-    t_checkResult check_res;
-
-    worldData = (t_worldData *)arg;
-    while (1)
-    {
-        check_res = checkBurnOut(worldData,worldData->timeOfStart);
-        if (check_res.stauts == RS_BURNEDOUT)
-        {
-            printf("%llu %u burned out\n",check_res.time,check_res.burnedCoderId);
-            return (NULL);
-        }
-        else if (check_res.stauts == RS_DONE) 
-            return (worldStop(worldData), NULL);
-        res = mpsc_recv_until(worldData->log_rcv,check_res.time + worldData->timeOfStart);
-        msg = res.data;
-        if (res.status == CH_CLOSED)
-            break;
-        if (res.status == CH_TIMEOUT)
-            continue;
-        if (msg->type != MSG_COMPILE_DONE)
-            print_log(msg, worldData);
-        if (msg->type == MSG_COMPILING)
-            set_complie(worldData,msg);
-        free(msg);
-    }
-    return (NULL);
+	world_data = (t_world_data *)arg;
+	while (1)
+	{
+		check_res = check_burn_out(world_data, world_data->time_of_start);
+		if (handle_check(world_data, check_res) != 0)
+			return (NULL);
+		res = mpsc_recv_until(world_data->log_rcv,
+				check_res.time + world_data->time_of_start);
+		msg = res.data;
+		if (res.status == CH_CLOSED)
+			break ;
+		if (res.status == CH_TIMEOUT)
+			continue ;
+		handle_msg(world_data, msg);
+	}
+	return (NULL);
 }

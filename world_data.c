@@ -1,68 +1,62 @@
-#include "C-Channels/channels.h"
-#include "C-Channels/helpers.h"
 #include "codexion.h"
 #include <stddef.h>
 #include <stdlib.h>
 
-int	mutexes_init(t_worldData **worldData, t_argumnets *args)
+static int	arrays_init(t_world_data **world_data, t_arguments *args)
 {
-	if (pthread_mutex_init(&(*worldData)->world_mutex, NULL) != 0)
-	{
-	    free((*worldData)->lastComplieTimeArr);
-		return (free_dongles((*worldData)->dongles, args->number_of_coders),
-				free(*worldData), 1);
-	}
-	if (pthread_mutex_init(&(*worldData)->output_mutex, NULL) != 0)
-	{
-        free((*worldData)->lastComplieTimeArr);
-		pthread_mutex_destroy(&(*worldData)->world_mutex);
-		return (free_dongles((*worldData)->dongles, args->number_of_coders),
-			free(*worldData), 1);
-	}
+	(*world_data)->last_compile_time_arr = ft_calloc(args->number_of_coders,
+			sizeof(long long));
+	if (!(*world_data)->last_compile_time_arr)
+		return (free(*world_data), 1);
+	(*world_data)->compilations_done = ft_calloc(args->number_of_coders,
+			sizeof(unsigned int));
+	if (!(*world_data)->compilations_done)
+		return (free((*world_data)->last_compile_time_arr),
+			free(*world_data), 1);
+	(*world_data)->dongles = dongles_init(args->number_of_coders);
+	if (!(*world_data)->dongles)
+		return (free((*world_data)->last_compile_time_arr),
+			free((*world_data)->compilations_done), free(*world_data), 1);
 	return (0);
 }
 
-int ch_init(t_worldData **worldData)
+static int	mutexes_fail(t_world_data **world_data, t_arguments *args)
 {
-    t_mpsc *MPSC;
-
-    MPSC = mpsc_new();
-    if (!MPSC)
-        return (1); //ADD CLEAUP
-    (*worldData)->log_rcv = MPSC->receiver;
-    (*worldData)->log_sender_oiginal = MPSC->sender;
-    return (0);
+	mpsc_sender_drop((*world_data)->log_sender_original);
+	receiver_free((*world_data)->log_rcv);
+	free((*world_data)->last_compile_time_arr);
+	free((*world_data)->compilations_done);
+	return (free_dongles(&(*world_data)->dongles, args->number_of_coders),
+		free(*world_data), 1);
 }
 
-//1 - err 0 - ok
-int	world_data_init(t_worldData **worldData, t_argumnets *args)
+static int	coders_fail(t_world_data **world_data, t_arguments *args)
 {
-	*worldData = ft_calloc(1, sizeof(t_worldData));
-	if (!*worldData)
+	pthread_mutex_destroy(&(*world_data)->world_mutex);
+	mpsc_sender_drop((*world_data)->log_sender_original);
+	free((*world_data)->compilations_done);
+	free((*world_data)->last_compile_time_arr);
+	receiver_free((*world_data)->log_rcv);
+	return (free_dongles(&(*world_data)->dongles, args->number_of_coders),
+		free(*world_data), 1);
+}
+
+int	world_data_init(t_world_data **world_data, t_arguments *args)
+{
+	*world_data = ft_calloc(1, sizeof(t_world_data));
+	if (!*world_data)
 		return (1);
-	(*worldData)->lastComplieTimeArr = ft_calloc(args->number_of_coders, sizeof(long long));
-	if (!(*worldData)->lastComplieTimeArr)
-	    return (free(*worldData), 1);
-	(*worldData)->compilationsDone = ft_calloc(args->number_of_coders, sizeof(unsigned int));
-	if (!(*worldData)->lastComplieTimeArr)
-	    return (free((*worldData)->lastComplieTimeArr),free(*worldData), 1);
-	(*worldData)->dongles = dongles_init(args->number_of_coders);
-	if (!(*worldData)->dongles)
-		return (free((*worldData)->lastComplieTimeArr), free(*worldData), 1);
-	(*worldData)->timeOfStart = get_ms();
-	if (mutexes_init(worldData, args) != 0)
+	(*world_data)->args = args;
+	if (arrays_init(world_data, args) != 0)
 		return (1);
-	(*worldData)->args = args;
-	if (ch_init(worldData) != 0)
-	    return (1); //TODO add clean up
-	(*worldData)->coders = coders_init(args, (*worldData)->dongles,
-			(*worldData));
-	if (!(*worldData)->coders)
-	{
-		pthread_mutex_destroy(&(*worldData)->world_mutex);
-		pthread_mutex_destroy(&(*worldData)->output_mutex);
-		return (free_dongles((*worldData)->dongles, args->number_of_coders),
-			free(*worldData), 1);
-	}
-	return ((*worldData)->is_running = RUNNING, 0);
+	(*world_data)->time_of_start = get_ms();
+	if (ch_init(world_data) != 0)
+		return (1);
+	if (mutexes_init(world_data, args) != 0)
+		return (mutexes_fail(world_data, args));
+	(*world_data)->coders = coders_init(args, (*world_data)->dongles,
+			(*world_data));
+	if (!(*world_data)->coders)
+		return (coders_fail(world_data, args));
+	return ((*world_data)->is_running = RUNNING, 0);
 }

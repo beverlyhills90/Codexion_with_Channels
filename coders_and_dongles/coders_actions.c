@@ -1,88 +1,86 @@
 #include "../codexion.h"
 #include <string.h>
 
-
-void	compile(t_coder *coder)
+int	compile(t_coder *coder)
 {
 	long long	log_time;
-	t_msg *msg;
+	t_msg		*msg;
 
-	
-	if (safeWorldStateCheck(coder->world_data) == STOP)
-		return ;
+	if (safe_world_state_check(coder->world_data) == STOP)
+		return (1);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
-	    return; //TODO MB add falback
-	msg->coderId = coder->coder_id;
-	msg->timestomp = get_ms();
+		return (1);
+	msg->coder_id = coder->coder_id;
+	msg->timestamp = get_ms();
 	msg->type = MSG_COMPILING;
-	coder->lastComplieTimestomp = msg->timestomp;
-	mpsc_send(coder->log_sender,msg);
+	coder->last_compile_timestamp = msg->timestamp;
+	mpsc_send(coder->log_sender, msg);
 	usleep(coder->args->time_to_compile * 1000);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
-	    return ; //TODO MB add falback
-	msg->coderId = coder->coder_id;
-	msg->timestomp = get_ms();
+		return (1);
+	msg->coder_id = coder->coder_id;
+	msg->timestamp = get_ms();
 	msg->type = MSG_COMPILE_DONE;
-	mpsc_send(coder->log_sender,msg);
+	mpsc_send(coder->log_sender, msg);
+	return (0);
 }
 
-void	debug(t_coder *coder)
+int	debug(t_coder *coder)
 {
 	long long	log_time;
-	t_msg *msg;
-	
-	if (safeWorldStateCheck(coder->world_data) == STOP)
-		return ;
+	t_msg		*msg;
+
+	if (safe_world_state_check(coder->world_data) == STOP)
+		return (1);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
-	    return; //TODO MB add falback
-	msg->coderId = coder->coder_id;
-	msg->timestomp = get_ms();
+		return (1);
+	msg->coder_id = coder->coder_id;
+	msg->timestamp = get_ms();
 	msg->type = MSG_DEBUGGING;
-	mpsc_send(coder->log_sender,msg);
+	mpsc_send(coder->log_sender, msg);
 	usleep(coder->args->time_to_debug * 1000);
-	
+	return (0);
 }
 
-void	refractoring(t_coder *coder)
+int	refactoring(t_coder *coder)
 {
 	long long	log_time;
-	t_msg *msg;
-		
-	if (safeWorldStateCheck(coder->world_data) == STOP)
-		return ;
+	t_msg		*msg;
+
+	if (safe_world_state_check(coder->world_data) == STOP)
+		return (1);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
-	    return; //TODO MB add falback
-	msg->coderId = coder->coder_id;
-	msg->timestomp = get_ms();
+		return (1);
+	msg->coder_id = coder->coder_id;
+	msg->timestamp = get_ms();
 	msg->type = MSG_REFACTORING;
-	mpsc_send(coder->log_sender,msg);
+	mpsc_send(coder->log_sender, msg);
 	usleep(coder->args->time_to_refactor * 1000);
+	return (0);
 }
 
-
-void *coders_routine(void *args)
+void	*coders_routine(void *args)
 {
-    t_coder *coder;
+	t_coder	*coder;
 
-    coder = (t_coder *) args;
-    while (safeWorldStateCheck(coder->world_data) == RUNNING) 
-    {
-
-        take_dongle_wraper(coder);
-		if (safeWorldStateCheck(coder->world_data) == STOP)
-		{
-			giveup_dongle_wraper(coder);
-			break;
-		}
-        compile(coder);
-        giveup_dongle_wraper(coder);
-        debug(coder);
-        refractoring(coder);
-    }
-    mpsc_sender_drop(coder->log_sender);
-    return (NULL);
+	coder = (t_coder *) args;
+	while (safe_world_state_check(coder->world_data) == RUNNING)
+	{
+		if (take_dongle_wrapper(coder) != 0)
+			break ;
+		if (safe_world_state_check(coder->world_data) == STOP)
+			break ;
+		if (compile(coder) != 0)
+			break ;
+		giveup_dongle_wrapper(coder);
+		if (debug(coder) != 0)
+			break ;
+		if (refactoring(coder) != 0)
+			break ;
+	}
+	return (NULL);
 }

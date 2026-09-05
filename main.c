@@ -1,7 +1,7 @@
 #include "codexion.h"
+#include <stdlib.h>
 
-
-int	join_coders(t_worldData *world_data)
+int	join_coders(t_world_data *world_data)
 {
 	unsigned long	i;
 	int				err;
@@ -21,8 +21,7 @@ int	join_coders(t_worldData *world_data)
 	return (has_error);
 }
 
-
-int	join_all(t_worldData *world_data)
+int	join_all(t_world_data *world_data)
 {
 	int	err;
 
@@ -33,7 +32,7 @@ int	join_all(t_worldData *world_data)
 	if (coders_create(world_data->coders,
 			world_data->args->number_of_coders, world_data) != 0)
 	{
-		worldStop(world_data);
+		world_stop(world_data);
 		pthread_join(world_data->monitor_thread_id, NULL);
 		return (1);
 	}
@@ -42,19 +41,18 @@ int	join_all(t_worldData *world_data)
 	return (0);
 }
 
-
-int main(int argc,char **argv)
+int	main(int argc, char **argv)
 {
-    t_argumnets		*arguments;
-    t_worldData     *worldData;
-    int				err;
-    
-    if (parsing_args(argv, argc, &arguments) != 0)
-		return (1);
-    if (world_data_init(&worldData,  arguments) != 0)
-        return (free(arguments), 1);
-    err = join_all(worldData);
-	if (err != 0)
-		return (1); //TODO clean up
+	t_arguments		*arguments;
+	t_world_data	*world_data;
+	int				err;
 
+	if (parsing_args(argv, argc, &arguments) != 0)
+		return (1);
+	if (world_data_init(&world_data, arguments) != 0)
+		return (free(arguments), 1);
+	err = join_all(world_data);
+	if (err != 0)
+		return (free_all(world_data), free(arguments), 1);
+	return (free_all(world_data), free(arguments), 0);
 }
