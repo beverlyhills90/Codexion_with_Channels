@@ -13,10 +13,16 @@ typedef struct s_checkResult {
 void print_log(t_msg *msg, t_worldData *worldData)
 {
     long long logTime;
+    char *logs[4];
+
+    logs[0] = " has taken a dongle";
+    logs[1] = " is compiling";
+    logs[2] = " is debugging";
+    logs[3] = " is refactoring";
     if(safeWorldStateCheck(worldData) == STOP)
         return;
     logTime = msg->timestomp - worldData->timeOfStart;
-    printf("%llu %i %d\n",logTime, msg->coderId, msg->type);
+    printf("%llu %i%s\n",logTime, msg->coderId, logs[msg->type]);
 }
 
 void set_complie(t_worldData *wordData, t_msg *msg)
@@ -42,6 +48,7 @@ t_checkResult checkBurnOut(t_worldData *worldData,long long timeOfStart)
             min_time = worldData->lastComplieTimeArr[i];
         if (worldData->lastComplieTimeArr[i] + worldData->args->time_to_burnout <= get_ms() - timeOfStart)
         {
+            worldStop(worldData);
             result.time = worldData->lastComplieTimeArr[i] + worldData->args->time_to_burnout;
             result.burnedCoderId = i + 1;
             return result;
@@ -73,13 +80,13 @@ void *monitor(void *arg)
         check_res = checkBurnOut(worldData,worldData->timeOfStart);
         if (check_res.stauts == RS_BURNEDOUT)
         {
-            worldStop(worldData);
+            printf("STOP");
             printf("%llu %u burned out\n",check_res.time,check_res.burnedCoderId);
             return (NULL);
         }
         else if (check_res.stauts == RS_DONE) 
             return (worldStop(worldData), NULL);
-        res = mpsc_recv_until(worldData->log_rcv,check_res.time + worldData->timeOfStart);
+        res = mpsc_recv_until(worldData->log_rcv,check_res.time + worldData->args->time_to_burnout);
         msg = res.data;
         if (res.status == CH_CLOSED)
             break;

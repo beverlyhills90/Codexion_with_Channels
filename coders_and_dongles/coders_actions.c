@@ -71,7 +71,13 @@ void *coders_routine(void *args)
     coder = (t_coder *) args;
     while (safeWorldStateCheck(coder->world_data) == RUNNING) 
     {
+
         take_dongle_wraper(coder);
+		if (safeWorldStateCheck(coder->world_data) == STOP)
+		{
+			giveup_dongle_wraper(coder);
+			break;
+		}
         compile(coder);
         giveup_dongle_wraper(coder);
         debug(coder);

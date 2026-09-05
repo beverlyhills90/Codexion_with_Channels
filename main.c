@@ -33,7 +33,7 @@ int	join_all(t_worldData *world_data)
 	if (coders_create(world_data->coders,
 			world_data->args->number_of_coders, world_data) != 0)
 	{
-		//safe_world_stop(world_data);
+		worldStop(world_data);
 		pthread_join(world_data->monitor_thread_id, NULL);
 		return (1);
 	}
