@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include <string.h>
+# include <time.h>
 
 void	*ft_calloc(size_t nmemb, size_t size)
 {

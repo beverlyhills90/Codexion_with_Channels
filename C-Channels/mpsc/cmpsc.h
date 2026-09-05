@@ -14,11 +14,18 @@ typedef struct s_chan_node
 	struct s_chan_node	*next;
 }	t_chan_node;
 
+typedef enum e_checkStatus {
+   RS_OK,
+   RS_DONE,
+   RS_BURNEDOUT
+} t_checkStatus;
+
 typedef enum e_chan_status
 {
 	CH_OK,
 	CH_ERR,
-	CH_CLOSED
+	CH_CLOSED,
+	CH_TIMEOUT
 }	t_chan_status;
 
 typedef struct s_chan_result
@@ -42,7 +49,8 @@ t_sender		*chan_sender_new(t_channel *channel);
 t_receiver		*chan_receiver_new(t_channel *channel);
 t_sender		*mpsc_sender_clone(t_sender *origin);
 void			mpsc_send(t_sender *sender, void *data);
-t_chan_result	mpsc_recv(t_receiver *receiver);
+t_chan_result	mpsc_recv(t_receiver *rcv);
+t_chan_result mpsc_recv_until(t_receiver *rcv, long long deadline_ms);
 void			mpsc_sender_drop(t_sender *sender);
 
 t_channel		*chan_new(void);
