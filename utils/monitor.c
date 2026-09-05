@@ -61,7 +61,7 @@ t_checkResult checkBurnOut(t_worldData *worldData,long long timeOfStart)
         result.stauts = RS_DONE;
     else
         result.stauts = RS_OK;
-    result.time = get_ms() - min_time;
+    result.time = min_time + worldData->args->time_to_burnout;
     return result;
 }
 
@@ -80,13 +80,12 @@ void *monitor(void *arg)
         check_res = checkBurnOut(worldData,worldData->timeOfStart);
         if (check_res.stauts == RS_BURNEDOUT)
         {
-            printf("STOP");
             printf("%llu %u burned out\n",check_res.time,check_res.burnedCoderId);
             return (NULL);
         }
         else if (check_res.stauts == RS_DONE) 
             return (worldStop(worldData), NULL);
-        res = mpsc_recv_until(worldData->log_rcv,check_res.time + worldData->args->time_to_burnout);
+        res = mpsc_recv_until(worldData->log_rcv,check_res.time + worldData->timeOfStart);
         msg = res.data;
         if (res.status == CH_CLOSED)
             break;
