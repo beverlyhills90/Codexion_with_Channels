@@ -130,7 +130,7 @@ void			scheduler_add(t_scheduler scheduler, t_coder *coder,
 					t_dongle *dongle);
 void			fifo_scheduler_add(t_dongle *dongle, t_request request);
 void			edf_scheduler(t_dongle *dongle, t_request request);
-void			scheduler_del(t_dongle *dongle);
+void			scheduler_del(t_dongle *dongle, t_coder *coder);
 
 long long		get_ms(void);
 void			free_dongles(t_dongle **dongles, unsigned int num);
@@ -143,5 +143,6 @@ void			print_log(t_msg *msg, t_world_data *world_data);
 void			set_compile(t_world_data *world_data, t_msg *msg);
 t_check_result	check_burn_out(t_world_data *world_data,
 					long long time_of_start);
+void			release_senders(t_world_data *world_data);
 
 #endif

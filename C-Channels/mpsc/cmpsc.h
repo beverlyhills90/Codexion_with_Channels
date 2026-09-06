@@ -42,7 +42,7 @@ typedef struct s_channel
 t_sender		*chan_sender_new(t_channel *channel);
 t_receiver		*chan_receiver_new(t_channel *channel);
 t_sender		*mpsc_sender_clone(t_sender *origin);
-void			mpsc_send(t_sender *sender, void *data);
+int				mpsc_send(t_sender *sender, void *data);
 t_chan_result	mpsc_recv(t_receiver *rcv);
 t_chan_result	mpsc_recv_until(t_receiver *rcv, long long deadline_ms);
 void			mpsc_sender_drop(t_sender *sender);

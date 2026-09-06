@@ -31,13 +31,13 @@ t_sender	*mpsc_sender_clone(t_sender *origin)
 	return (sender);
 }
 
-static void	chan_push(t_channel *chan, void *data)
+static int	chan_push(t_channel *chan, void *data)
 {
 	t_chan_node	*node;
 
 	node = ft_calloc(1, sizeof(t_chan_node));
 	if (!node)
-		return ;
+		return (1);
 	node->data = data;
 	pthread_mutex_lock(&chan->mu);
 	if (chan->tail == NULL)
@@ -52,11 +52,14 @@ static void	chan_push(t_channel *chan, void *data)
 	}
 	pthread_cond_signal(&chan->not_empty);
 	pthread_mutex_unlock(&chan->mu);
+	return (0);
 }
 
-void	mpsc_send(t_sender *sender, void *data)
+int	mpsc_send(t_sender *sender, void *data)
 {
-	chan_push(sender->channel_q, data);
+	if (chan_push(sender->channel_q, data) != 0)
+		return (1);
+	return (0);
 }
 
 void	mpsc_sender_drop(t_sender *sender)

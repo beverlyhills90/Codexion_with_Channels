@@ -24,26 +24,27 @@ static int	send_took_dongle(t_coder *coder)
 	msg->coder_id = coder->coder_id;
 	msg->timestamp = get_ms();
 	msg->type = MSG_TOOK_DONGLE;
-	mpsc_send(coder->log_sender, msg);
+	if (mpsc_send(coder->log_sender, msg) != 0)
+		return (free(msg), 1);
 	return (0);
 }
 
 static int	take_dongle(t_dongle *dongle, t_coder *coder)
 {
-    int err;
-    
-    err = 0;
+	int	err;
+
+	err = 0;
 	pthread_mutex_lock(&dongle->mutex);
 	scheduler_add(coder->args->scheduler, coder, dongle);
 	wait_for_dongle(dongle, coder);
 	if (safe_world_state_check(coder->world_data) == STOP)
 	{
-		scheduler_del(dongle);
+		scheduler_del(dongle, coder);
 		pthread_mutex_unlock(&dongle->mutex);
 		return (1);
 	}
 	dongle->is_occupied = 1;
-	scheduler_del(dongle);
+	scheduler_del(dongle, coder);
 	if (send_took_dongle(coder) != 0)
 		err = 1;
 	pthread_mutex_unlock(&dongle->mutex);

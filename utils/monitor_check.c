@@ -15,7 +15,7 @@ static t_check_result	burnout_result(t_world_data *world_data, size_t i)
 }
 
 static t_check_result	scan_result(t_world_data *world_data, size_t done,
-		unsigned long long min_time)
+		long long min_time)
 {
 	t_check_result	result;
 
@@ -31,9 +31,9 @@ static t_check_result	scan_result(t_world_data *world_data, size_t done,
 t_check_result	check_burn_out(t_world_data *world_data,
 		long long time_of_start)
 {
-	unsigned long long	min_time;
-	size_t				i;
-	size_t				done;
+	long long	min_time;
+	size_t		i;
+	size_t		done;
 
 	i = 0;
 	done = 0;
@@ -43,7 +43,8 @@ t_check_result	check_burn_out(t_world_data *world_data,
 		if (world_data->last_compile_time_arr[i] < min_time)
 			min_time = world_data->last_compile_time_arr[i];
 		if (world_data->last_compile_time_arr[i]
-			+ world_data->args->time_to_burnout <= get_ms() - time_of_start)
+			+ (long long)world_data->args->time_to_burnout
+			<= get_ms() - time_of_start)
 			return (burnout_result(world_data, i));
 		if (world_data->args->number_of_compiles_required
 			<= world_data->compilations_done[i])

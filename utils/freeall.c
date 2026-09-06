@@ -34,10 +34,9 @@ void	free_all(t_world_data *world_data)
 	t_chan_result	rcv;
 
 	free_dongles(&world_data->dongles, world_data->args->number_of_coders);
-	free_coders(world_data->coders, world_data->args->number_of_coders);
+	free(world_data->coders);
 	free(world_data->last_compile_time_arr);
 	free(world_data->compilations_done);
-	mpsc_sender_drop(world_data->log_sender_original);
 	while (1)
 	{
 		rcv = mpsc_recv(world_data->log_rcv);

@@ -40,3 +40,16 @@ void	world_stop(t_world_data *world_data)
 		i++;
 	}
 }
+
+void	release_senders(t_world_data *world_data)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < world_data->args->number_of_coders)
+	{
+		mpsc_sender_drop(world_data->coders[i].log_sender);
+		i++;
+	}
+	mpsc_sender_drop(world_data->log_sender_original);
+}

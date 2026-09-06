@@ -1,7 +1,7 @@
 NAME = codexion
 
 CC = cc
-CFLAGS = -g #-Wall -Wextra -Werror
+CFLAGS = -g -Wall -Wextra -Werror
  
 SRCS = main.c \
 	world_data.c \
