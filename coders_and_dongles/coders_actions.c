@@ -1,5 +1,23 @@
 #include "../codexion.h"
+#include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
+int	ft_sleep(t_coder *coder, int wait_time_ms)
+{
+	long long	start_time;
+	long long	current_time;
+
+	start_time = get_ms();
+	while (safe_world_state_check(coder->world_data) != STOP)
+	{
+		current_time = get_ms();
+		if ((current_time - start_time) >= wait_time_ms)
+			return (0);
+		usleep(500);
+	}
+	return (1);
+}
 
 int	compile(t_coder *coder)
 {
@@ -16,7 +34,8 @@ int	compile(t_coder *coder)
 	coder->last_compile_timestamp = msg->timestamp;
 	if (mpsc_send(coder->log_sender, msg) != 0)
 		return (free(msg), 1);
-	usleep(coder->args->time_to_compile * 1000);
+	if (ft_sleep(coder, coder->args->time_to_debug) != 0)
+		return (1);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
 		return (1);
@@ -42,7 +61,8 @@ int	debug(t_coder *coder)
 	msg->type = MSG_DEBUGGING;
 	if (mpsc_send(coder->log_sender, msg) != 0)
 		return (free(msg), 1);
-	usleep(coder->args->time_to_debug * 1000);
+	if (ft_sleep(coder, coder->args->time_to_debug) != 0)
+		return (1);
 	return (0);
 }
 
@@ -60,7 +80,8 @@ int	refactoring(t_coder *coder)
 	msg->type = MSG_REFACTORING;
 	if (mpsc_send(coder->log_sender, msg) != 0)
 		return (free(msg), 1);
-	usleep(coder->args->time_to_refactor * 1000);
+	if (ft_sleep(coder, coder->args->time_to_debug) != 0)
+		return (1);
 	return (0);
 }
 

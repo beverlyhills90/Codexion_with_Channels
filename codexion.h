@@ -6,6 +6,7 @@
 # include <stdio.h>
 # include <stdlib.h>
 # include <string.h>
+# include <sys/_pthread/_pthread_cond_t.h>
 # include <sys/time.h>
 # include <unistd.h>
 # include "C-Channels/channels.h"

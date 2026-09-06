@@ -1,4 +1,5 @@
 #include "../codexion.h"
+#include <pthread.h>
 #include <stddef.h>
 
 long long	get_ms(void)
