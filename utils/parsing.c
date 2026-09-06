@@ -69,6 +69,6 @@ int	parsing_args(char **argv, int argc, t_arguments **arguments)
 		return (1);
 	}
 	if ((*arguments)->number_of_coders == 0)
-		return (printf("Error: number of coders <= 0"), 1);
+		return (printf("Error: number of coders <= 0\n"), 1);
 	return (0);
 }
