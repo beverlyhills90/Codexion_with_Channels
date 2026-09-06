@@ -34,7 +34,7 @@ int	compile(t_coder *coder)
 	coder->last_compile_timestamp = msg->timestamp;
 	if (mpsc_send(coder->log_sender, msg) != 0)
 		return (free(msg), 1);
-	if (ft_sleep(coder, coder->args->time_to_debug) != 0)
+	if (ft_sleep(coder, coder->args->time_to_compile) != 0)
 		return (1);
 	msg = ft_calloc(1, sizeof(t_msg));
 	if (!msg)
@@ -80,7 +80,7 @@ int	refactoring(t_coder *coder)
 	msg->type = MSG_REFACTORING;
 	if (mpsc_send(coder->log_sender, msg) != 0)
 		return (free(msg), 1);
-	if (ft_sleep(coder, coder->args->time_to_debug) != 0)
+	if (ft_sleep(coder, coder->args->time_to_refactor) != 0)
 		return (1);
 	return (0);
 }
