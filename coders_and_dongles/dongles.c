@@ -1,16 +1,23 @@
 #include "../codexion.h"
+#include <pthread.h>
 
 static void	wait_for_dongle(t_dongle *dongle, t_coder *coder)
 {
 	struct timespec	ts;
 
 	while (safe_world_state_check(coder->world_data) == RUNNING
-		&& (dongle->is_occupied || get_ms() < dongle->cooldown
-			|| dongle->queue[0].coder != coder))
+		&& (dongle->is_occupied || dongle->queue[0].coder != coder))
 	{
-		ts.tv_sec = dongle->cooldown / 1000;
-		ts.tv_nsec = ((dongle->cooldown) % 1000) * 1000000;
-		pthread_cond_timedwait(&dongle->state, &dongle->mutex, &ts);
+		if (get_ms() < dongle->cooldown)
+		{
+			ts.tv_sec = dongle->cooldown / 1000;
+			ts.tv_nsec = ((dongle->cooldown) % 1000) * 1000000;
+			pthread_cond_timedwait(&dongle->state, &dongle->mutex, &ts);
+		}
+		else
+		{
+			pthread_cond_wait(&dongle->state, &dongle->mutex);
+		}
 	}
 }
 
