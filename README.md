@@ -354,9 +354,7 @@ conditions.
 ### Use of AI
 
 AI (Claude, via Claude Code) was used as a reviewer and a discussion partner,
-not as a code generator. The repository contains a `CLAUDE.md` file stating the
-rules that were applied throughout: the assistant was not allowed to write or
-modify any logic in `.c` / `.h` files, nor to insert 42 headers.
+not as a code generator.
 
 What it was used for:
 
