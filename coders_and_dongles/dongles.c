@@ -6,7 +6,8 @@ static void	wait_for_dongle(t_dongle *dongle, t_coder *coder)
 	struct timespec	ts;
 
 	while (safe_world_state_check(coder->world_data) == RUNNING
-		&& (dongle->is_occupied || dongle->queue[0].coder != coder))
+		&& (dongle->is_occupied || dongle->queue[0].coder != coder
+			|| get_ms() < dongle->cooldown))
 	{
 		if (get_ms() < dongle->cooldown)
 		{
